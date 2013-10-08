@@ -9,12 +9,8 @@ CMainWindow::CMainWindow(QWidget *parent) :
 {
     ui->setupUi(this);
 
-    mainView = new CGraphicsView(ui->mainWidget);
-    mainView->setObjectName(QStringLiteral("mainView"));
-
-    ui->gridLayout->addWidget(mainView, 0, 0, 1, 1);
-
-    connect(ui->actionOpen_image, SIGNAL(triggered()), SLOT(onActionOpenImage()));
+    _mainView = new CGraphicsView(ui->mainWidget);
+    ui->gridLayout->addWidget(_mainView, 0, 0, 1, 1);
 }
 
 CMainWindow::~CMainWindow()

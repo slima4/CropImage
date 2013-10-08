@@ -21,7 +21,7 @@ public:
 private:
     Ui::CMainWindow *ui;
 
-    CGraphicsView *mainView;
+    CGraphicsView *_mainView;
 };
 
 #endif // MAINWINDOW_H

@@ -13,6 +13,11 @@ QRectF CBoxItem::boundingRect() const
 void CBoxItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
            QWidget *widget)
 {
+    Q_UNUSED(option);
+    Q_UNUSED(widget);
+
+    painter->setRenderHint(QPainter::Antialiasing, true);
+
     int width = _size.width();
     int height = _size.height();
     painter->drawRect(0, 0, width, height);

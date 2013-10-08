@@ -3,71 +3,109 @@
 
 #include <QFileDialog>
 
+namespace {
+    qint32 MIN_RESIZE = 50;
+}
+
 CGraphicsView::CGraphicsView(QWidget *parent) :
     QGraphicsView(parent),
-    boxItem(0),
-    itemSelected(false),
-    resizeMode(false)
+    _boxItem(0),
+    _itemSelected(false),
+    _resizeMode(false)
 {
-    menu = new QMenu(this);
+    initMenu();
+
+    _scene = new QGraphicsScene(this);
+    setScene(_scene);
+
+    startTimer(1000 / 25);
+}
+
+void CGraphicsView::initMenu()
+{
+    _menu = new QMenu(this);
 
     QAction *action;
 
     action = new QAction(tr("Open Image"), this);
     connect(action, SIGNAL(triggered()), SLOT(onActionOpenImage()));
-    menu->addAction(action);
+    _menu->addAction(action);
 
     action = new QAction(tr("Crop"), this);
     connect(action, SIGNAL(triggered()), SLOT(onActionCropImage()));
-    menu->addAction(action);
+    _menu->addAction(action);
 
-    _scene = new QGraphicsScene(this);
-    setScene(_scene);
-    startTimer(1000 / 25);
+    _itemMenu = new QMenu(this);
+
+    action = new QAction(tr("Save Image"), this);
+    connect(action, SIGNAL(triggered()), SLOT(onActionSaveImage()));
+    _itemMenu->addAction(action);
 }
 
 void CGraphicsView::mouseMoveEvent(QMouseEvent * event)
 {
-    if (boxItem != 0)
-    {
-        QPointF p = mapToScene(event->pos());
-        if(itemSelected)
-            boxItem->setPos(p);
-        else
-            boxItem->setSize(QSize(p.x(),p.y()));
-    }
     QGraphicsView::mouseMoveEvent(event);
+
+    if (_boxItem != 0)
+    {
+        if(!_itemSelected)
+        {
+            QPointF p = mapToScene(event->pos() - _boxItem->pos().toPoint());
+            if(p.x() < MIN_RESIZE && p.y() > MIN_RESIZE)
+                _boxItem->setSize(QSize(MIN_RESIZE, p.y()));
+
+            if(p.x() > MIN_RESIZE && p.y() < MIN_RESIZE)
+                _boxItem->setSize(QSize(p.x(), MIN_RESIZE));
+
+            if(p.x() > MIN_RESIZE && p.y() > MIN_RESIZE)
+                _boxItem->setSize(QSize(p.x(),p.y()));
+        }
+        else
+        {
+            QPointF p = (event->pos() - _offsetMove);
+            _boxItem->setPos(p);
+        }
+    }
 }
 
 void CGraphicsView::mousePressEvent(QMouseEvent * event)
 {
+    QGraphicsView::mousePressEvent(event);
+
     if (QGraphicsItem * item = itemAt(event->pos()))
     {
         QRectF rect = item->sceneBoundingRect();
-        rect.adjust(0,0, rect.x() - 20, rect.y() - 20);
+        rect.adjust(0,0, rect.x() - 10, rect.y() - 10);
         QPoint point = mapFromScene(rect.width(), rect.height());
         if( point.x() < event->pos().x() && point.y() < event->pos().y())
         {
-            resizeMode = true;
+            _resizeMode = true;
         }
         else
         {
-            itemSelected = true;
+            _offsetMove = event->pos() - item->pos().toPoint();
+            _itemSelected = true;
         }
     }
-    QGraphicsView::mousePressEvent(event);
 }
 
 void CGraphicsView::mouseReleaseEvent(QMouseEvent * event)
 {
-    resizeMode = false;
-    itemSelected = false;
     QGraphicsView::mouseReleaseEvent(event);
+
+    _resizeMode = false;
+    _itemSelected = false;
 }
 
 void CGraphicsView::contextMenuEvent(QContextMenuEvent *event)
 {
-    menu->exec(event->globalPos());
+    _pointMenu = event->pos();
+
+    QGraphicsItem * item = itemAt(_pointMenu);
+    if (item != 0 && item->zValue() == 100)
+        _itemMenu->exec(event->globalPos());
+    else
+        _menu->exec(event->globalPos());
 }
 
 void CGraphicsView::onActionOpenImage()
@@ -76,28 +114,34 @@ void CGraphicsView::onActionOpenImage()
                                                  "/home",
                                                  tr("Images (*.png *.jpg)"));
 
-    QPixmap pix;
-    pix.load(fileName);
+    _pix.load(fileName);
 
-    _scene->addPixmap(fileName);
+    _scene->addPixmap(_pix);
 }
 
 void CGraphicsView::onActionCropImage()
 {
-    if ( boxItem == 0)
+    if ( _boxItem == 0)
     {
-        boxItem = new CBoxItem();
-        _scene->addItem(boxItem);
+        _boxItem = new CBoxItem();
+        _boxItem->setZValue(100);
+        _boxItem->setPos(_pointMenu);
+        _scene->addItem(_boxItem);
     }
+}
+
+void CGraphicsView::onActionSaveImage()
+{
+    QString fileName = QFileDialog::getSaveFileName(this, tr("Save Fiel"),
+                                 "/home/test.png",
+                                 tr("Images (*.png *.jpg)"));
+
+    QRect r(_boxItem->pos().toPoint(), _boxItem->size());
+    _pix.copy(r).save(fileName);
 }
 
 void CGraphicsView::timerEvent(QTimerEvent *event)
 {
     Q_UNUSED(event);
-
-    QListIterator<QGraphicsItem*> it(scene()->items());
-    while(it.hasNext())
-    {
-        it.next()->update();
-    }
+    scene()->update();
 }
