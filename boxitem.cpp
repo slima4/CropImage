@@ -24,8 +24,6 @@ void CBoxItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
     painter->drawLine(width - 13, height, width, height - 13);
     painter->drawLine(width - 9, height, width, height - 9);
     painter->drawLine(width - 5, height, width, height - 5);
-
-    painter->setRenderHint(QPainter::Antialiasing, true);
 }
 
 QSize CBoxItem::size() const

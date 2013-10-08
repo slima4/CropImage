@@ -17,6 +17,7 @@ CGraphicsView::CGraphicsView(QWidget *parent) :
 
     _scene = new QGraphicsScene(this);
     setScene(_scene);
+    scene();
 
     startTimer(1000 / 25);
 }
@@ -31,7 +32,7 @@ void CGraphicsView::initMenu()
     connect(action, SIGNAL(triggered()), SLOT(onActionOpenImage()));
     _menu->addAction(action);
 
-    action = new QAction(tr("Crop"), this);
+    action = new QAction(tr("Crop Box"), this);
     connect(action, SIGNAL(triggered()), SLOT(onActionCropImage()));
     _menu->addAction(action);
 
